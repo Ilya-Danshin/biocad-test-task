@@ -28,6 +28,36 @@ func New(cfg *config.DB, ctx context.Context) (*Postgres, error) {
 	return &db, nil
 }
 
-func (db *Postgres) Add() {
+func (db *Postgres) AddProcessedFile(ctx context.Context, filename string) error {
+	rows, err := db.conn.Query(ctx,
+		`INSERT INTO files VALUES ($1)`, filename)
+	defer rows.Close()
+	if err != nil {
+		return err
+	}
 
+	return nil
+}
+
+func (db *Postgres) GetProcessedFiles(ctx context.Context) ([]string, error) {
+	rows, err := db.conn.Query(ctx,
+		`SELECT * FROM files;`)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	var files []string
+
+	for rows.Next() {
+		var file string
+		err = rows.Scan(&file)
+		if err != nil {
+			return nil, err
+		}
+
+		files = append(files, file)
+	}
+
+	return files, nil
 }

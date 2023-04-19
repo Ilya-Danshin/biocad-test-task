@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS files(
+    file text NOT NULL UNIQUE
+);

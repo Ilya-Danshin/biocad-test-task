@@ -8,8 +8,8 @@ import (
 )
 
 type Config struct {
-	Database DB
-	Parser   Parser
+	Database       DB
+	FilesDirectory FilesDirectory
 }
 
 type DB struct {
@@ -20,8 +20,9 @@ type DB struct {
 	DatabaseName string `env:"DB_NAME"`
 }
 
-type Parser struct {
-	TSVDirectory string `env:"TSV_DIRECTORY"`
+type FilesDirectory struct {
+	FilesDirectory string `env:"FILES_DIRECTORY"`
+	Delay          int    `env:"CHECK_FILES_DIRECTORY_DELAY"`
 }
 
 func New() (*Config, error) {
