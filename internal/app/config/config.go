@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Database       DB
 	FilesDirectory FilesDirectory
+	Parser         Parser
 }
 
 type DB struct {
@@ -23,6 +24,10 @@ type DB struct {
 type FilesDirectory struct {
 	FilesDirectory string `env:"FILES_DIRECTORY"`
 	Delay          int    `env:"CHECK_FILES_DIRECTORY_DELAY"`
+}
+
+type Parser struct {
+	OutFilesDirectory string `env:"OUT_FILE_DIRECTORY"`
 }
 
 func New() (*Config, error) {
