@@ -30,4 +30,5 @@ type IDatabase interface {
 	GetProcessedFiles(ctx context.Context) ([]string, error)
 
 	AddDataRow(ctx context.Context, data []Record) error
+	GetRecordsByGuid(ctx context.Context, guid uuid.UUID) ([]Record, error)
 }

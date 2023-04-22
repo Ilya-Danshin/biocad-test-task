@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -86,4 +87,41 @@ func (db *Postgres) AddDataRow(ctx context.Context, data []Record) error {
 		return err
 	}
 	return nil
+}
+
+func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid uuid.UUID) ([]Record, error) {
+	rows, err := db.conn.Query(ctx,
+		`SELECT * FROM data WHERE (unit_guid=$1)`, guid)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	var allRecords []Record
+	for rows.Next() {
+		var oneRecord Record
+		err = rows.Scan(
+			&oneRecord.N,
+			&oneRecord.MQTT,
+			&oneRecord.InvId,
+			&oneRecord.UnitGuid,
+			&oneRecord.MsgId,
+			&oneRecord.Text,
+			&oneRecord.Context,
+			&oneRecord.Class,
+			&oneRecord.Level,
+			&oneRecord.Area,
+			&oneRecord.Addr,
+			&oneRecord.Block,
+			&oneRecord.Type,
+			&oneRecord.Bit,
+			&oneRecord.InvertBit)
+		if err != nil {
+			return nil, err
+		}
+
+		allRecords = append(allRecords, oneRecord)
+	}
+
+	return allRecords, nil
 }

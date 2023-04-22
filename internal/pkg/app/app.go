@@ -45,7 +45,7 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	a.par, err = parser.New(queue, a.errors, a.db)
+	a.par, err = parser.New(a.cfg.Parser, queue, a.errors, a.db)
 	if err != nil {
 		return nil, err
 	}

@@ -9,22 +9,33 @@ import (
 
 	"github.com/gofrs/uuid"
 
+	"test_task/internal/app/config"
 	"test_task/internal/app/database"
+	"test_task/internal/app/outfile"
 )
 
 type Parser struct {
-	queue chan string
-	db    database.IDatabase
+	queue       chan string
+	db          database.IDatabase
+	outFilesDir string
+	outFile     outfile.IOutFile
 
 	errChan chan error
 }
 
-func New(queue chan string, errChan chan error, db database.IDatabase) (*Parser, error) {
+func New(cfg config.Parser, queue chan string, errChan chan error, db database.IDatabase) (*Parser, error) {
 	par := Parser{}
 
 	par.queue = queue
 	par.errChan = errChan
 	par.db = db
+	par.outFilesDir = cfg.OutFilesDirectory
+
+	var err error
+	par.outFile, err = outfile.New(par.outFilesDir, par.db)
+	if err != nil {
+		return nil, err
+	}
 
 	return &par, nil
 }
@@ -43,6 +54,11 @@ func (p *Parser) Run(ctx context.Context) {
 		}
 
 		err = p.db.AddDataRow(ctx, records)
+		if err != nil {
+			p.errChan <- err
+		}
+
+		err = p.WriteDataToFile(ctx, records)
 		if err != nil {
 			p.errChan <- err
 		}
@@ -125,6 +141,16 @@ func (p *Parser) parseTSV(tsvData *[][]string) ([]database.Record, error) {
 	}
 
 	return allRecords, nil
+}
+
+func (p *Parser) WriteDataToFile(ctx context.Context, records []database.Record) error {
+
+	err := p.outFile.WriteData(ctx, records)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func readInt(str string) (int, error) {
