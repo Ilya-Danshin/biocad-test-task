@@ -2,6 +2,7 @@
 .env
 .tsv
 ~$integratsiiapparatnyhpl.xlsx
+/pdf/*
 
 # Created by https://www.toptal.com/developers/gitignore/api/goland,goland+all,go
 # Edit at https://www.toptal.com/developers/gitignore?templates=goland,goland+all,go
