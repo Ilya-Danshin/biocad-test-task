@@ -7,6 +7,7 @@ import (
 	"test_task/internal/app/config"
 	"test_task/internal/app/database"
 	"test_task/internal/app/directory"
+	"test_task/internal/app/parser"
 	"test_task/internal/app/service"
 )
 
@@ -15,6 +16,7 @@ type App struct {
 	db  *database.Postgres
 	dir *directory.FilesDirectory
 	s   *service.Service
+	par *parser.Parser
 
 	errors chan error
 }
@@ -23,12 +25,14 @@ func New() (*App, error) {
 	a := &App{}
 	var err error
 
+	ctx := context.Background()
+
 	a.cfg, err = config.New()
 	if err != nil {
 		return nil, err
 	}
 
-	a.db, err = database.New(&a.cfg.Database, context.Background())
+	a.db, err = database.New(&a.cfg.Database, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +40,12 @@ func New() (*App, error) {
 	queue := make(chan string, 1024)
 	a.errors = make(chan error)
 
-	a.dir, err = directory.New(a.cfg.FilesDirectory, queue, a.db, a.errors)
+	a.dir, err = directory.New(ctx, a.cfg.FilesDirectory, queue, a.db, a.errors)
+	if err != nil {
+		return nil, err
+	}
+
+	a.par, err = parser.New(a.cfg.Parser, queue, a.errors, a.db)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +59,10 @@ func New() (*App, error) {
 }
 
 func (a *App) Run() error {
+	ctx := context.Background()
 
-	go a.dir.Run()
+	go a.dir.Run(ctx)
+	go a.par.Run(ctx)
 
 	for {
 		log.Print(<-a.errors)

@@ -19,16 +19,16 @@ type FilesDirectory struct {
 	errChan chan error
 }
 
-func New(cfg config.FilesDirectory, ch chan string, db database.IDatabase, errChan chan error) (*FilesDirectory, error) {
+func New(ctx context.Context, cfg config.FilesDirectory, queue chan string, db database.IDatabase, errChan chan error) (*FilesDirectory, error) {
 	dir := FilesDirectory{}
 
 	dir.path = cfg.FilesDirectory
 	dir.delay = time.Millisecond * time.Duration(cfg.Delay)
-	dir.queue = ch
+	dir.queue = queue
 	dir.db = db
 	dir.errChan = errChan
 
-	dbFiles, err := db.GetProcessedFiles(context.Background())
+	dbFiles, err := db.GetProcessedFiles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func New(cfg config.FilesDirectory, ch chan string, db database.IDatabase, errCh
 	return &dir, nil
 }
 
-func (d *FilesDirectory) Run() {
+func (d *FilesDirectory) Run(ctx context.Context) {
 	for true {
 		dirFiles, err := ioutil.ReadDir(d.path)
 		if err != nil {
@@ -53,7 +53,7 @@ func (d *FilesDirectory) Run() {
 			filePath := d.path + "\\" + file.Name()
 			if _, ok := d.processedFiles[filePath]; !ok {
 				d.queue <- filePath
-				err = d.db.AddProcessedFile(context.Background(), filePath)
+				err = d.db.AddProcessedFile(ctx, filePath)
 				if err != nil {
 					d.errChan <- err
 				}
