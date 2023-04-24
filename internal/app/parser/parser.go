@@ -3,6 +3,7 @@ package parser
 import (
 	"context"
 	"encoding/csv"
+	"github.com/pkg/errors"
 	"os"
 	"strconv"
 	"strings"
@@ -45,22 +46,23 @@ func (p *Parser) Run(ctx context.Context) {
 		file := <-p.queue
 		tsvData, err := p.readTSVFile(file)
 		if err != nil {
-			p.errChan <- err
+			p.errChan <- errors.Errorf("read tsv file error: %e", err)
 			continue
 		}
+
 		records, err := p.parseTSV(tsvData)
 		if err != nil {
-			p.errChan <- err
+			p.errChan <- errors.Errorf("parse tsv file error: %e", err)
 		}
 
 		err = p.db.AddDataRow(ctx, records)
 		if err != nil {
-			p.errChan <- err
+			p.errChan <- errors.Errorf("add data to database error: %e", err)
 		}
 
 		err = p.WriteDataToFile(ctx, records)
 		if err != nil {
-			p.errChan <- err
+			p.errChan <- errors.Errorf("write to out file error: %e", err)
 		}
 	}
 }

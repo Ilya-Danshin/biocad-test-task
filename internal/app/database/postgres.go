@@ -32,7 +32,7 @@ func New(cfg *config.DB, ctx context.Context) (*Postgres, error) {
 
 func (db *Postgres) AddProcessedFile(ctx context.Context, filename string) error {
 	rows, err := db.conn.Query(ctx,
-		`INSERT INTO files VALUES ($1)`, filename)
+		`INSERT INTO files VALUES ($1);`, filename)
 	defer rows.Close()
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (db *Postgres) AddDataRow(ctx context.Context, data []Record) error {
 	batch := &pgx.Batch{}
 
 	for _, row := range data {
-		batch.Queue(`INSERT INTO data VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+		batch.Queue(`INSERT INTO data VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`,
 			row.N, row.MQTT, row.InvId, row.UnitGuid, row.MsgId, row.Text, row.Context, row.Class,
 			row.Level, row.Area, row.Addr, row.Block, row.Type, row.Bit, row.InvertBit)
 	}
@@ -91,7 +91,44 @@ func (db *Postgres) AddDataRow(ctx context.Context, data []Record) error {
 
 func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid uuid.UUID) ([]Record, error) {
 	rows, err := db.conn.Query(ctx,
-		`SELECT * FROM data WHERE (unit_guid=$1)`, guid)
+		`SELECT * FROM data WHERE (unit_guid=$1);`, guid)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	var allRecords []Record
+	for rows.Next() {
+		var oneRecord Record
+		err = rows.Scan(
+			&oneRecord.N,
+			&oneRecord.MQTT,
+			&oneRecord.InvId,
+			&oneRecord.UnitGuid,
+			&oneRecord.MsgId,
+			&oneRecord.Text,
+			&oneRecord.Context,
+			&oneRecord.Class,
+			&oneRecord.Level,
+			&oneRecord.Area,
+			&oneRecord.Addr,
+			&oneRecord.Block,
+			&oneRecord.Type,
+			&oneRecord.Bit,
+			&oneRecord.InvertBit)
+		if err != nil {
+			return nil, err
+		}
+
+		allRecords = append(allRecords, oneRecord)
+	}
+
+	return allRecords, nil
+}
+
+func (db *Postgres) GetDataAPI(ctx context.Context, guid uuid.UUID, offset int32, limit int32) ([]Record, error) {
+	rows, err := db.conn.Query(ctx,
+		`SELECT * FROM data WHERE unit_guid=$1 LIMIT $2 OFFSET $3;`, guid, limit, offset)
 	defer rows.Close()
 	if err != nil {
 		return nil, err
