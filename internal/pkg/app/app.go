@@ -50,7 +50,7 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	a.s, err = service.New()
+	a.s, err = service.New(5, a.db, a.errors)
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +63,7 @@ func (a *App) Run() error {
 
 	go a.dir.Run(ctx)
 	go a.par.Run(ctx)
+	go a.s.Run()
 
 	for {
 		log.Print(<-a.errors)
