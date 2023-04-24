@@ -11,10 +11,11 @@ service ApiService {
 }
 
 message DataRequest {
-  int32 page = 1;
-  int32 limit = 2;
+  string guid = 1;
+  int32 page = 2;
+  int32 limit = 3;
 }
 
 message DataResponse {
-  .google.protobuf.Struct data = 1;
+  repeated .google.protobuf.Struct data = 1;
 }
