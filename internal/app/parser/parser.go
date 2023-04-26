@@ -3,12 +3,12 @@ package parser
 import (
 	"context"
 	"encoding/csv"
-	"github.com/pkg/errors"
 	"os"
 	"strconv"
 	"strings"
-
+	
 	"github.com/gofrs/uuid"
+	"github.com/pkg/errors"
 
 	"test_task/internal/app/config"
 	"test_task/internal/app/database"

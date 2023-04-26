@@ -3,11 +3,15 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"net"
+	"strconv"
+	
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
-	"net"
+
+	"test_task/internal/app/config"
 	"test_task/internal/app/database"
 	pb "test_task/proto"
 )
@@ -15,22 +19,24 @@ import (
 type Service struct {
 	pageSize int32
 	db       database.IDatabase
+	port     int32
 
 	errChan chan error
 }
 
-func New(pageSize int32, db database.IDatabase, errChan chan error) (*Service, error) {
+func New(cfg config.Service, db database.IDatabase, errChan chan error) (*Service, error) {
 	serv := &Service{}
 
-	serv.pageSize = pageSize
+	serv.pageSize = cfg.PageSize
 	serv.db = db
+	serv.port = cfg.Port
 	serv.errChan = errChan
 
 	return serv, nil
 }
 
 func (s *Service) Run() {
-	listener, err := net.Listen("tcp", ":5300")
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(s.port)))
 	if err != nil {
 		s.errChan <- err
 		return
@@ -71,7 +77,7 @@ func (s *Service) GetData(ctx context.Context, req *pb.DataRequest) (*pb.DataRes
 		if err != nil {
 			return nil, err
 		}
-		
+
 		arrSt = append(arrSt, st)
 	}
 

@@ -11,6 +11,7 @@ type Config struct {
 	Database       DB
 	FilesDirectory FilesDirectory
 	Parser         Parser
+	Service        Service
 }
 
 type DB struct {
@@ -28,6 +29,11 @@ type FilesDirectory struct {
 
 type Parser struct {
 	OutFilesDirectory string `env:"OUT_FILE_DIRECTORY"`
+}
+
+type Service struct {
+	Port     int32 `env:"SERVICE_PORT"`
+	PageSize int32 `env:"SERVICE_PAGE_SIZE"`
 }
 
 func New() (*Config, error) {

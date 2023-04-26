@@ -50,7 +50,7 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	a.s, err = service.New(5, a.db, a.errors)
+	a.s, err = service.New(a.cfg.Service, a.db, a.errors)
 	if err != nil {
 		return nil, err
 	}
