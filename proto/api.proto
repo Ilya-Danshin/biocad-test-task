@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package api;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "./";
+
+service ApiService {
+  rpc GetData(DataRequest) returns (DataResponse) {}
+}
+
+message DataRequest {
+  string guid = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message DataResponse {
+  repeated .google.protobuf.Struct data = 1;
+}
