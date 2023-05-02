@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/balibuild/winio/pkg/guid"
 
-	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -89,7 +89,7 @@ func (db *Postgres) AddDataRow(ctx context.Context, data []Record) error {
 	return nil
 }
 
-func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid uuid.UUID) ([]Record, error) {
+func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid guid.GUID) ([]Record, error) {
 	rows, err := db.conn.Query(ctx,
 		`SELECT * FROM data WHERE (unit_guid=$1);`, guid)
 	defer rows.Close()
@@ -126,7 +126,7 @@ func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid uuid.UUID) ([]Rec
 	return allRecords, nil
 }
 
-func (db *Postgres) GetDataAPI(ctx context.Context, guid uuid.UUID, offset int32, limit int32) ([]Record, error) {
+func (db *Postgres) GetDataAPI(ctx context.Context, guid guid.GUID, offset int32, limit int32) ([]Record, error) {
 	rows, err := db.conn.Query(ctx,
 		`SELECT * FROM data WHERE unit_guid=$1 LIMIT $2 OFFSET $3;`, guid, limit, offset)
 	defer rows.Close()

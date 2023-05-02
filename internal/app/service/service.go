@@ -6,7 +6,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/gofrs/uuid"
+	"github.com/balibuild/winio/pkg/guid"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -55,12 +55,12 @@ func (s *Service) Run() {
 
 func (s *Service) GetData(ctx context.Context, req *pb.DataRequest) (*pb.DataResponse, error) {
 	offset := s.pageSize * req.Page
-	guid, err := uuid.FromString(req.Guid)
+	recordGuid, err := guid.FromString(req.Guid)
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := s.db.GetDataAPI(ctx, guid, offset, req.Limit)
+	data, err := s.db.GetDataAPI(ctx, recordGuid, offset, req.Limit)
 	if err != nil {
 		return nil, err
 	}

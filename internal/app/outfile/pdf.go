@@ -2,12 +2,12 @@ package outfile
 
 import (
 	"context"
+	"github.com/balibuild/winio/pkg/guid"
 	"log"
 	"sort"
 	"strconv"
 	"test_task/internal/app/config"
 
-	"github.com/gofrs/uuid"
 	"github.com/unidoc/unipdf/v3/common/license"
 	"github.com/unidoc/unipdf/v3/creator"
 	"github.com/unidoc/unipdf/v3/model"
@@ -81,10 +81,10 @@ func (f *PDFFile) WriteToPdf(records []database.Record) error {
 	return nil
 }
 
-func getUniqueGUid(records []database.Record) []uuid.UUID {
+func getUniqueGUid(records []database.Record) []guid.GUID {
 
-	var uniqGuids []uuid.UUID
-	var prevGuid uuid.UUID
+	var uniqGuids []guid.GUID
+	var prevGuid guid.GUID
 	for _, record := range records {
 		if record.UnitGuid != prevGuid {
 			uniqGuids = append(uniqGuids, record.UnitGuid)

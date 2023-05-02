@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gofrs/uuid"
+	"github.com/balibuild/winio/pkg/guid"
 	"github.com/pkg/errors"
 
 	"test_task/internal/app/config"
@@ -107,7 +107,7 @@ func (p *Parser) parseTSV(tsvData *[][]string) ([]database.Record, error) {
 		oneRecord.MQTT, _ = readBytes(row[1])
 		oneRecord.InvId, _ = readString(row[2])
 
-		oneRecord.UnitGuid, err = uuid.FromString(row[3])
+		oneRecord.UnitGuid, err = guid.FromString(row[3])
 		if err != nil {
 			p.errChan <- err
 			continue

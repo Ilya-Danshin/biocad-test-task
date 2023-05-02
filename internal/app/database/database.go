@@ -3,14 +3,14 @@ package database
 import (
 	"context"
 
-	"github.com/gofrs/uuid"
+	"github.com/balibuild/winio/pkg/guid"
 )
 
 type Record struct {
 	N         int
 	MQTT      []byte
 	InvId     string
-	UnitGuid  uuid.UUID
+	UnitGuid  guid.GUID
 	MsgId     string
 	Text      string
 	Context   []byte
@@ -30,7 +30,7 @@ type IDatabase interface {
 	GetProcessedFiles(ctx context.Context) ([]string, error)
 
 	AddDataRow(ctx context.Context, data []Record) error
-	GetRecordsByGuid(ctx context.Context, guid uuid.UUID) ([]Record, error)
+	GetRecordsByGuid(ctx context.Context, guid guid.GUID) ([]Record, error)
 
-	GetDataAPI(ctx context.Context, guid uuid.UUID, offset int32, limit int32) ([]Record, error)
+	GetDataAPI(ctx context.Context, guid guid.GUID, offset int32, limit int32) ([]Record, error)
 }
