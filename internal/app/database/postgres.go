@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
-	"github.com/balibuild/winio/pkg/guid"
 
+	"github.com/balibuild/winio/pkg/guid"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -33,21 +33,21 @@ func New(cfg *config.Config, ctx context.Context) (*Postgres, error) {
 func (db *Postgres) AddProcessedFile(ctx context.Context, filename string) error {
 	rows, err := db.conn.Query(ctx,
 		`INSERT INTO files VALUES ($1);`, filename)
-	defer rows.Close()
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	return nil
 }
 
 func (db *Postgres) GetProcessedFiles(ctx context.Context) ([]string, error) {
 	rows, err := db.conn.Query(ctx,
-		`SELECT * FROM files;`)
-	defer rows.Close()
+		`SELECT file FROM files;`)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var files []string
 
@@ -64,38 +64,62 @@ func (db *Postgres) GetProcessedFiles(ctx context.Context) ([]string, error) {
 	return files, nil
 }
 
+const batchQueue string = `INSERT INTO data
+							VALUES ($1, $2, $3, $4, $5, 
+							        $6, $7, $8, $9, $10, 
+							        $11, $12, $13, $14, $15);`
+
 func (db *Postgres) AddDataRow(ctx context.Context, data []Record) error {
+	tx, err := db.conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
 	batch := &pgx.Batch{}
 
 	for _, row := range data {
-		batch.Queue(`INSERT INTO data VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`,
+		batch.Queue(batchQueue,
 			row.N, row.MQTT, row.InvId, row.UnitGuid, row.MsgId, row.Text, row.Context, row.Class,
 			row.Level, row.Area, row.Addr, row.Block, row.Type, row.Bit, row.InvertBit)
 	}
 
-	br := db.conn.SendBatch(ctx, batch)
+	br := tx.SendBatch(ctx, batch)
 
 	for _, _ = range data {
-		_, err := br.Exec()
+		_, err = br.Exec()
 		if err != nil {
 			return err
 		}
 	}
 
-	err := br.Close()
+	err = br.Close()
 	if err != nil {
 		return err
 	}
+
+	err = tx.Commit(ctx)
+
 	return nil
 }
 
+const recordsByGuidQueue string = `SELECT n, mqtt, invid, unit_guid, msg_id, 
+       										text, context, class, level, area, 
+       										addr, block, type, bit, invert_bit
+									FROM data WHERE (unit_guid=$1);`
+
 func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid guid.GUID) ([]Record, error) {
-	rows, err := db.conn.Query(ctx,
-		`SELECT * FROM data WHERE (unit_guid=$1);`, guid)
-	defer rows.Close()
+	rows, err := db.conn.Query(ctx, recordsByGuidQueue, guid)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var allRecords []Record
 	for rows.Next() {
@@ -115,7 +139,8 @@ func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid guid.GUID) ([]Rec
 			&oneRecord.Block,
 			&oneRecord.Type,
 			&oneRecord.Bit,
-			&oneRecord.InvertBit)
+			&oneRecord.InvertBit,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -126,13 +151,17 @@ func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid guid.GUID) ([]Rec
 	return allRecords, nil
 }
 
+const recordsByGuidWithOffsetLimitQueue string = `SELECT n, mqtt, invid, unit_guid, msg_id, 
+       												text, context, class, level, area, 
+       												addr, block, type, bit, invert_bit
+												FROM data WHERE unit_guid=$1 LIMIT $2 OFFSET $3;`
+
 func (db *Postgres) GetDataAPI(ctx context.Context, guid guid.GUID, offset int32, limit int32) ([]Record, error) {
-	rows, err := db.conn.Query(ctx,
-		`SELECT * FROM data WHERE unit_guid=$1 LIMIT $2 OFFSET $3;`, guid, limit, offset)
-	defer rows.Close()
+	rows, err := db.conn.Query(ctx, recordsByGuidWithOffsetLimitQueue, guid, limit, offset)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var allRecords []Record
 	for rows.Next() {
@@ -152,7 +181,8 @@ func (db *Postgres) GetDataAPI(ctx context.Context, guid guid.GUID, offset int32
 			&oneRecord.Block,
 			&oneRecord.Type,
 			&oneRecord.Bit,
-			&oneRecord.InvertBit)
+			&oneRecord.InvertBit,
+		)
 		if err != nil {
 			return nil, err
 		}
