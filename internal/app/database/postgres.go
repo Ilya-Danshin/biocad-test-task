@@ -15,9 +15,9 @@ type Postgres struct {
 	conn *pgxpool.Pool
 }
 
-func New(cfg *config.DB, ctx context.Context) (*Postgres, error) {
+func New(cfg *config.Config, ctx context.Context) (*Postgres, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
-		cfg.Host, cfg.User, cfg.Password, cfg.DatabaseName, cfg.Port)
+		cfg.Database.Host, cfg.Database.User, cfg.Database.Password, cfg.Database.DatabaseName, cfg.Database.Port)
 
 	conn, err := pgxpool.Connect(ctx, dsn)
 	if err != nil {

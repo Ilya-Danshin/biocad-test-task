@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net"
 	"strconv"
-	
+
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -24,12 +24,12 @@ type Service struct {
 	errChan chan error
 }
 
-func New(cfg config.Service, db database.IDatabase, errChan chan error) (*Service, error) {
+func New(cfg *config.Config, db database.IDatabase, errChan chan error) (*Service, error) {
 	serv := &Service{}
 
-	serv.pageSize = cfg.PageSize
+	serv.pageSize = cfg.Service.PageSize
 	serv.db = db
-	serv.port = cfg.Port
+	serv.port = cfg.Service.Port
 	serv.errChan = errChan
 
 	return serv, nil

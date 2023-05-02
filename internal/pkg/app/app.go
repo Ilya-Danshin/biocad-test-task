@@ -32,7 +32,7 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	a.db, err = database.New(&a.cfg.Database, ctx)
+	a.db, err = database.New(a.cfg, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,17 +40,17 @@ func New() (*App, error) {
 	queue := make(chan string, 1024)
 	a.errors = make(chan error)
 
-	a.dir, err = directory.New(ctx, a.cfg.FilesDirectory, queue, a.db, a.errors)
+	a.dir, err = directory.New(ctx, a.cfg, queue, a.db, a.errors)
 	if err != nil {
 		return nil, err
 	}
 
-	a.par, err = parser.New(a.cfg.Parser, queue, a.errors, a.db)
+	a.par, err = parser.New(a.cfg, queue, a.errors, a.db)
 	if err != nil {
 		return nil, err
 	}
 
-	a.s, err = service.New(a.cfg.Service, a.db, a.errors)
+	a.s, err = service.New(a.cfg, a.db, a.errors)
 	if err != nil {
 		return nil, err
 	}

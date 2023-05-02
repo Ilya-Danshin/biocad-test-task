@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	
+
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 
@@ -19,21 +19,23 @@ type Parser struct {
 	queue       chan string
 	db          database.IDatabase
 	outFilesDir string
+	pdfApiKey   string
 	outFile     outfile.IOutFile
 
 	errChan chan error
 }
 
-func New(cfg config.Parser, queue chan string, errChan chan error, db database.IDatabase) (*Parser, error) {
+func New(cfg *config.Config, queue chan string, errChan chan error, db database.IDatabase) (*Parser, error) {
 	par := Parser{}
 
 	par.queue = queue
 	par.errChan = errChan
 	par.db = db
-	par.outFilesDir = cfg.OutFilesDirectory
+	par.outFilesDir = cfg.Parser.OutFilesDirectory
+	par.pdfApiKey = cfg.Parser.PdfApiKey
 
 	var err error
-	par.outFile, err = outfile.New(par.outFilesDir, par.db)
+	par.outFile, err = outfile.New(cfg, par.db)
 	if err != nil {
 		return nil, err
 	}
