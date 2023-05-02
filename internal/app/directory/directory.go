@@ -33,7 +33,7 @@ func New(ctx context.Context, cfg *config.Config, queue chan string, db database
 		return nil, err
 	}
 
-	procFiles := make(map[string]struct{})
+	procFiles := make(map[string]struct{}, len(dbFiles))
 	for _, file := range dbFiles {
 		procFiles[file] = struct{}{}
 	}
@@ -43,7 +43,7 @@ func New(ctx context.Context, cfg *config.Config, queue chan string, db database
 }
 
 func (d *FilesDirectory) Run(ctx context.Context) {
-	for true {
+	for {
 		dirFiles, err := ioutil.ReadDir(d.path)
 		if err != nil {
 			d.errChan <- err
