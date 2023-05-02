@@ -37,7 +37,7 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	queue := make(chan string, 1024)
+	queue := make(chan string, a.cfg.App.QueueMaxSize)
 	a.errors = make(chan error)
 
 	a.dir, err = directory.New(ctx, a.cfg, queue, a.db, a.errors)

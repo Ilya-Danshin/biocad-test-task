@@ -8,6 +8,9 @@ import (
 )
 
 type Config struct {
+	App struct {
+		QueueMaxSize int `env:"QUEUE_MAX_SIZE"`
+	}
 	Database struct {
 		Host         string `env:"DB_HOST"`
 		Port         int    `env:"DB_PORT"`

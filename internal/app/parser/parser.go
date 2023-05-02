@@ -3,13 +3,12 @@ package parser
 import (
 	"context"
 	"encoding/csv"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/balibuild/winio/pkg/guid"
-	"github.com/pkg/errors"
-
 	"test_task/internal/app/config"
 	"test_task/internal/app/database"
 	"test_task/internal/app/outfile"
@@ -48,23 +47,23 @@ func (p *Parser) Run(ctx context.Context) {
 		file := <-p.queue
 		tsvData, err := p.readTSVFile(file)
 		if err != nil {
-			p.errChan <- errors.Errorf("read tsv file error: %e", err)
+			p.errChan <- fmt.Errorf("read tsv file error: %w", err)
 			continue
 		}
 
 		records, err := p.parseTSV(tsvData)
 		if err != nil {
-			p.errChan <- errors.Errorf("parse tsv file error: %e", err)
+			p.errChan <- fmt.Errorf("parse tsv file error: %w", err)
 		}
 
 		err = p.db.AddDataRow(ctx, records)
 		if err != nil {
-			p.errChan <- errors.Errorf("add data to database error: %e", err)
+			p.errChan <- fmt.Errorf("add data to database error: %w", err)
 		}
 
 		err = p.WriteDataToFile(ctx, records)
 		if err != nil {
-			p.errChan <- errors.Errorf("write to out file error: %e", err)
+			p.errChan <- fmt.Errorf("write to out file error: %w", err)
 		}
 	}
 }
