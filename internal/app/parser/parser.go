@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/balibuild/winio/pkg/guid"
+	"github.com/gofrs/uuid"
+
 	"test_task/internal/app/config"
 	"test_task/internal/app/database"
 	"test_task/internal/app/outfile"
@@ -91,7 +92,7 @@ func (p *Parser) readTSVFile(path string) (*[][]string, error) {
 }
 
 func (p *Parser) parseTSV(tsvData *[][]string) ([]database.Record, error) {
-	var allRecords []database.Record
+	allRecords := make([]database.Record, 0, len(*tsvData))
 	var err error
 
 	for _, row := range *tsvData {
@@ -106,7 +107,7 @@ func (p *Parser) parseTSV(tsvData *[][]string) ([]database.Record, error) {
 		oneRecord.MQTT, _ = readBytes(row[1])
 		oneRecord.InvId, _ = readString(row[2])
 
-		oneRecord.UnitGuid, err = guid.FromString(row[3])
+		oneRecord.UnitGuid, err = uuid.FromString(row[3])
 		if err != nil {
 			p.errChan <- err
 			continue

@@ -6,7 +6,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/balibuild/winio/pkg/guid"
+	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -55,7 +55,7 @@ func (s *Service) Run() {
 
 func (s *Service) GetData(ctx context.Context, req *pb.DataRequest) (*pb.DataResponse, error) {
 	offset := s.pageSize * req.Page
-	recordGuid, err := guid.FromString(req.Guid)
+	recordGuid, err := uuid.FromString(req.Guid)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *Service) GetData(ctx context.Context, req *pb.DataRequest) (*pb.DataRes
 		return nil, err
 	}
 
-	var arrSt []*structpb.Struct
+	arrSt := make([]*structpb.Struct, 0, len(data))
 	for _, row := range data {
 		jsonRow, err := json.Marshal(row)
 		if err != nil {

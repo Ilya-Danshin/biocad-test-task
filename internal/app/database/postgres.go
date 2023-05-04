@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/gofrs/uuid"
 
-	"github.com/balibuild/winio/pkg/guid"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -114,7 +114,7 @@ const recordsByGuidQueue string = `SELECT n, mqtt, invid, unit_guid, msg_id,
        										addr, block, type, bit, invert_bit
 									FROM data WHERE (unit_guid=$1);`
 
-func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid guid.GUID) ([]Record, error) {
+func (db *Postgres) GetRecordsByGuid(ctx context.Context, guid uuid.UUID) ([]Record, error) {
 	rows, err := db.conn.Query(ctx, recordsByGuidQueue, guid)
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ const recordsByGuidWithOffsetLimitQueue string = `SELECT n, mqtt, invid, unit_gu
        												addr, block, type, bit, invert_bit
 												FROM data WHERE unit_guid=$1 LIMIT $2 OFFSET $3;`
 
-func (db *Postgres) GetDataAPI(ctx context.Context, guid guid.GUID, offset int32, limit int32) ([]Record, error) {
+func (db *Postgres) GetDataAPI(ctx context.Context, guid uuid.UUID, offset int32, limit int32) ([]Record, error) {
 	rows, err := db.conn.Query(ctx, recordsByGuidWithOffsetLimitQueue, guid, limit, offset)
 	if err != nil {
 		return nil, err
