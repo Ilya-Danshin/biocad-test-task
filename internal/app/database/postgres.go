@@ -156,7 +156,7 @@ const recordsByGuidWithOffsetLimitQueue string = `SELECT n, mqtt, invid, unit_gu
        												addr, block, type, bit, invert_bit
 												FROM data WHERE unit_guid=$1 LIMIT $2 OFFSET $3;`
 
-func (db *Postgres) GetDataAPI(ctx context.Context, guid uuid.UUID, offset int32, limit int32) ([]Record, error) {
+func (db *Postgres) GetDataAPI(ctx context.Context, guid uuid.UUID, offset int, limit int) ([]Record, error) {
 	rows, err := db.conn.Query(ctx, recordsByGuidWithOffsetLimitQueue, guid, limit, offset)
 	if err != nil {
 		return nil, err

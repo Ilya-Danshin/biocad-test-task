@@ -1,4 +1,4 @@
-package service
+package grps_service
 
 import (
 	"context"
@@ -27,9 +27,9 @@ type Service struct {
 func New(cfg *config.Config, db database.IDatabase, errChan chan error) (*Service, error) {
 	serv := &Service{}
 
-	serv.pageSize = cfg.Service.PageSize
+	serv.pageSize = cfg.GrpcService.PageSize
 	serv.db = db
-	serv.port = cfg.Service.Port
+	serv.port = cfg.GrpcService.Port
 	serv.errChan = errChan
 
 	return serv, nil
@@ -60,7 +60,7 @@ func (s *Service) GetData(ctx context.Context, req *pb.DataRequest) (*pb.DataRes
 		return nil, err
 	}
 
-	data, err := s.db.GetDataAPI(ctx, recordGuid, offset, req.Limit)
+	data, err := s.db.GetDataAPI(ctx, recordGuid, int(offset), int(req.Limit))
 	if err != nil {
 		return nil, err
 	}

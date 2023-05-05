@@ -29,9 +29,13 @@ type Config struct {
 		BoldFont          string  `env:"STANDARD_BOLD_FONT"`
 		TableBorderWidth  float64 `env:"TABLE_BORDER_WIDTH"`
 	}
-	Service struct {
-		Port     int32 `env:"SERVICE_PORT"`
-		PageSize int32 `env:"SERVICE_PAGE_SIZE"`
+	GrpcService struct {
+		Port     int32 `env:"GRPC_SERVICE_PORT"`
+		PageSize int32 `env:"GRPC_SERVICE_PAGE_SIZE"`
+	}
+	HttpService struct {
+		Port     int `env:"HTTP_SERVICE_PORT"`
+		PageSize int `env:"HTTP_SERVICE_PAGE_SIZE"`
 	}
 }
 

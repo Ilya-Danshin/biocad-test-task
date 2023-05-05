@@ -3,20 +3,22 @@ package app
 import (
 	"context"
 	"log"
+	"test_task/internal/app/http_service"
 
 	"test_task/internal/app/config"
 	"test_task/internal/app/database"
 	"test_task/internal/app/directory"
+	"test_task/internal/app/grpc_service"
 	"test_task/internal/app/parser"
-	"test_task/internal/app/service"
 )
 
 type App struct {
-	cfg *config.Config
-	db  *database.Postgres
-	dir *directory.FilesDirectory
-	s   *service.Service
-	par *parser.Parser
+	cfg  *config.Config
+	db   *database.Postgres
+	dir  *directory.FilesDirectory
+	grpc *grps_service.Service
+	http *http_service.Service
+	par  *parser.Parser
 
 	errors chan error
 }
@@ -50,7 +52,12 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	a.s, err = service.New(a.cfg, a.db, a.errors)
+	a.grpc, err = grps_service.New(a.cfg, a.db, a.errors)
+	if err != nil {
+		return nil, err
+	}
+
+	a.http, err = http_service.New(a.cfg, a.db, a.errors)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +70,8 @@ func (a *App) Run() error {
 
 	go a.dir.Run(ctx)
 	go a.par.Run(ctx)
-	go a.s.Run()
+	go a.grpc.Run()
+	go a.http.Run()
 
 	for {
 		log.Print(<-a.errors)
