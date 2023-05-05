@@ -2,31 +2,38 @@ package outfile
 
 import (
 	"context"
-	"log"
-	"os"
+	"github.com/gofrs/uuid"
 	"sort"
 	"strconv"
 
-	"github.com/gofrs/uuid"
 	"github.com/unidoc/unipdf/v3/common/license"
 	"github.com/unidoc/unipdf/v3/creator"
 	"github.com/unidoc/unipdf/v3/model"
 
+	"test_task/internal/app/config"
 	"test_task/internal/app/database"
 )
 
 type PDFFile struct {
-	outFilesDir string
-	db          database.IDatabase
+	outFilesDir      string
+	apiKey           string
+	font             model.StdFontName
+	boldFont         model.StdFontName
+	tableBorderWidth float64
+	db               database.IDatabase
 }
 
-func New(outFilesDir string, db database.IDatabase) (*PDFFile, error) {
+func New(cfg *config.Config, db database.IDatabase) (*PDFFile, error) {
 	pdf := PDFFile{}
 
-	pdf.outFilesDir = outFilesDir
+	pdf.outFilesDir = cfg.Parser.OutFilesDirectory
+	pdf.apiKey = cfg.Parser.PdfApiKey
+	pdf.font = model.StdFontName(cfg.Parser.Font)
+	pdf.boldFont = model.StdFontName(cfg.Parser.BoldFont)
+	pdf.tableBorderWidth = cfg.Parser.TableBorderWidth
 	pdf.db = db
 
-	err := license.SetMeteredKey(os.Getenv(`PDF_API_KEY`))
+	err := license.SetMeteredKey(pdf.apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -60,14 +67,18 @@ func (f *PDFFile) WriteData(ctx context.Context, records []database.Record) erro
 }
 
 func (f *PDFFile) WriteToPdf(records []database.Record) error {
-	c, err := createPdf(records)
+	c, err := f.createPdf(records)
 	if err != nil {
 		return err
 	}
 
+	if len(records) == 0 {
+		return nil
+	}
+
 	// Write to output file.
-	if err := c.WriteToFile(f.outFilesDir + "\\" + records[0].UnitGuid.String() + ".pdf"); err != nil {
-		log.Fatal(err)
+	if err = c.WriteToFile(f.outFilesDir + "\\" + records[0].UnitGuid.String() + ".pdf"); err != nil {
+		return err
 	}
 
 	return nil
@@ -78,29 +89,18 @@ func getUniqueGUid(records []database.Record) []uuid.UUID {
 	var uniqGuids []uuid.UUID
 	var prevGuid uuid.UUID
 	for _, record := range records {
-		if record.UnitGuid != prevGuid {
-			uniqGuids = append(uniqGuids, record.UnitGuid)
-			prevGuid = record.UnitGuid
-		} else {
+		if record.UnitGuid == prevGuid {
 			continue
 		}
+
+		uniqGuids = append(uniqGuids, record.UnitGuid)
+		prevGuid = record.UnitGuid
 	}
 
 	return uniqGuids
 }
 
-func createPdf(records []database.Record) (*creator.Creator, error) {
-	// Create report fonts.
-	font, err := model.NewStandard14Font("Helvetica")
-	if err != nil {
-		return nil, err
-	}
-
-	fontBold, err := model.NewStandard14Font("Helvetica-Bold")
-	if err != nil {
-		return nil, err
-	}
-
+func (f *PDFFile) createPdf(records []database.Record) (*creator.Creator, error) {
 	c := creator.New()
 	pageSize := creator.PageSize{creator.PageSizeA4[1], creator.PageSizeA4[0]}
 	c.SetPageSize(pageSize)
@@ -109,38 +109,18 @@ func createPdf(records []database.Record) (*creator.Creator, error) {
 	table.SetMargins(0, 0, 10, 0)
 
 	// Draw table header.
-	addCell(c, table, "n", fontBold)
-	addCell(c, table, "mqtt", fontBold)
-	addCell(c, table, "invid", fontBold)
-	addCell(c, table, "unit_guid", fontBold)
-	addCell(c, table, "msg_id", fontBold)
-	addCell(c, table, "text", fontBold)
-	addCell(c, table, "context", fontBold)
-	addCell(c, table, "class", fontBold)
-	addCell(c, table, "level", fontBold)
-	addCell(c, table, "area", fontBold)
-	addCell(c, table, "addr", fontBold)
-	addCell(c, table, "block", fontBold)
-	addCell(c, table, "type", fontBold)
-	addCell(c, table, "bit", fontBold)
-	addCell(c, table, "invert_bit", fontBold)
+	err := f.addHeader(c, table)
+	if err != nil {
+		return nil, err
+	}
+
+	font, err := model.NewStandard14Font(f.font)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, record := range records {
-		addCell(c, table, strconv.Itoa(record.N), font)
-		addCell(c, table, string(record.MQTT), font)
-		addCell(c, table, record.InvId, font)
-		addCell(c, table, record.UnitGuid.String(), font)
-		addCell(c, table, record.MsgId, font)
-		addCell(c, table, record.Text, font)
-		addCell(c, table, string(record.Context), font)
-		addCell(c, table, record.Class, font)
-		addCell(c, table, strconv.Itoa(record.Level), font)
-		addCell(c, table, record.Area, font)
-		addCell(c, table, record.Addr, font)
-		addCell(c, table, record.Block, font)
-		addCell(c, table, record.Type, font)
-		addCell(c, table, strconv.Itoa(record.Bit), font)
-		addCell(c, table, strconv.Itoa(record.InvertBit), font)
+		f.addRow(c, table, font, record)
 	}
 
 	err = c.Draw(table)
@@ -151,14 +131,57 @@ func createPdf(records []database.Record) (*creator.Creator, error) {
 	return c, nil
 }
 
-func addCell(c *creator.Creator, table *creator.Table, text string, font *model.PdfFont) *creator.TableCell {
+func (f *PDFFile) addHeader(c *creator.Creator, table *creator.Table) error {
+	font, err := model.NewStandard14Font(f.boldFont)
+	if err != nil {
+		return err
+	}
+
+	addCell(c, table, "n", font, f.tableBorderWidth)
+	addCell(c, table, "mqtt", font, f.tableBorderWidth)
+	addCell(c, table, "invid", font, f.tableBorderWidth)
+	addCell(c, table, "unit_guid", font, f.tableBorderWidth)
+	addCell(c, table, "msg_id", font, f.tableBorderWidth)
+	addCell(c, table, "text", font, f.tableBorderWidth)
+	addCell(c, table, "context", font, f.tableBorderWidth)
+	addCell(c, table, "class", font, f.tableBorderWidth)
+	addCell(c, table, "level", font, f.tableBorderWidth)
+	addCell(c, table, "area", font, f.tableBorderWidth)
+	addCell(c, table, "addr", font, f.tableBorderWidth)
+	addCell(c, table, "block", font, f.tableBorderWidth)
+	addCell(c, table, "type", font, f.tableBorderWidth)
+	addCell(c, table, "bit", font, f.tableBorderWidth)
+	addCell(c, table, "invert_bit", font, f.tableBorderWidth)
+
+	return nil
+}
+
+func (f *PDFFile) addRow(c *creator.Creator, table *creator.Table, font *model.PdfFont, record database.Record) {
+	addCell(c, table, strconv.Itoa(record.N), font, f.tableBorderWidth)
+	addCell(c, table, string(record.MQTT), font, f.tableBorderWidth)
+	addCell(c, table, record.InvId, font, f.tableBorderWidth)
+	addCell(c, table, record.UnitGuid.String(), font, f.tableBorderWidth)
+	addCell(c, table, record.MsgId, font, f.tableBorderWidth)
+	addCell(c, table, record.Text, font, f.tableBorderWidth)
+	addCell(c, table, string(record.Context), font, f.tableBorderWidth)
+	addCell(c, table, record.Class, font, f.tableBorderWidth)
+	addCell(c, table, strconv.Itoa(record.Level), font, f.tableBorderWidth)
+	addCell(c, table, record.Area, font, f.tableBorderWidth)
+	addCell(c, table, record.Addr, font, f.tableBorderWidth)
+	addCell(c, table, record.Block, font, f.tableBorderWidth)
+	addCell(c, table, record.Type, font, f.tableBorderWidth)
+	addCell(c, table, strconv.Itoa(record.Bit), font, f.tableBorderWidth)
+	addCell(c, table, strconv.Itoa(record.InvertBit), font, f.tableBorderWidth)
+}
+
+func addCell(c *creator.Creator, table *creator.Table, text string, font *model.PdfFont, borderWidth float64) *creator.TableCell {
 	cell := table.NewCell()
 
 	p := c.NewStyledParagraph()
 	p.Append(text).Style.Font = font
 
 	cell.SetContent(p)
-	cell.SetBorder(creator.CellBorderSideAll, creator.CellBorderStyleSingle, 1)
+	cell.SetBorder(creator.CellBorderSideAll, creator.CellBorderStyleSingle, borderWidth)
 
 	return cell
 }

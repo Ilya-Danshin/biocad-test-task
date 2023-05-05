@@ -3,7 +3,7 @@ package parser
 import (
 	"context"
 	"encoding/csv"
-	"github.com/pkg/errors"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -19,21 +19,23 @@ type Parser struct {
 	queue       chan string
 	db          database.IDatabase
 	outFilesDir string
+	pdfApiKey   string
 	outFile     outfile.IOutFile
 
 	errChan chan error
 }
 
-func New(cfg config.Parser, queue chan string, errChan chan error, db database.IDatabase) (*Parser, error) {
+func New(cfg *config.Config, queue chan string, errChan chan error, db database.IDatabase) (*Parser, error) {
 	par := Parser{}
 
 	par.queue = queue
 	par.errChan = errChan
 	par.db = db
-	par.outFilesDir = cfg.OutFilesDirectory
+	par.outFilesDir = cfg.Parser.OutFilesDirectory
+	par.pdfApiKey = cfg.Parser.PdfApiKey
 
 	var err error
-	par.outFile, err = outfile.New(par.outFilesDir, par.db)
+	par.outFile, err = outfile.New(cfg, par.db)
 	if err != nil {
 		return nil, err
 	}
@@ -46,23 +48,23 @@ func (p *Parser) Run(ctx context.Context) {
 		file := <-p.queue
 		tsvData, err := p.readTSVFile(file)
 		if err != nil {
-			p.errChan <- errors.Errorf("read tsv file error: %e", err)
+			p.errChan <- fmt.Errorf("read tsv file error: %w", err)
 			continue
 		}
 
 		records, err := p.parseTSV(tsvData)
 		if err != nil {
-			p.errChan <- errors.Errorf("parse tsv file error: %e", err)
+			p.errChan <- fmt.Errorf("parse tsv file error: %w", err)
 		}
 
 		err = p.db.AddDataRow(ctx, records)
 		if err != nil {
-			p.errChan <- errors.Errorf("add data to database error: %e", err)
+			p.errChan <- fmt.Errorf("add data to database error: %w", err)
 		}
 
 		err = p.WriteDataToFile(ctx, records)
 		if err != nil {
-			p.errChan <- errors.Errorf("write to out file error: %e", err)
+			p.errChan <- fmt.Errorf("write to out file error: %w", err)
 		}
 	}
 }
@@ -90,7 +92,7 @@ func (p *Parser) readTSVFile(path string) (*[][]string, error) {
 }
 
 func (p *Parser) parseTSV(tsvData *[][]string) ([]database.Record, error) {
-	var allRecords []database.Record
+	allRecords := make([]database.Record, 0, len(*tsvData))
 	var err error
 
 	for _, row := range *tsvData {

@@ -8,26 +8,35 @@ import (
 )
 
 type Config struct {
-	Database       DB
-	FilesDirectory FilesDirectory
-	Parser         Parser
-}
-
-type DB struct {
-	Host         string `env:"DB_HOST"`
-	Port         int    `env:"DB_PORT"`
-	User         string `env:"DB_USER"`
-	Password     string `env:"DB_PASSWORD"`
-	DatabaseName string `env:"DB_NAME"`
-}
-
-type FilesDirectory struct {
-	FilesDirectory string `env:"FILES_DIRECTORY"`
-	Delay          int    `env:"CHECK_FILES_DIRECTORY_DELAY"`
-}
-
-type Parser struct {
-	OutFilesDirectory string `env:"OUT_FILE_DIRECTORY"`
+	App struct {
+		QueueMaxSize int `env:"QUEUE_MAX_SIZE"`
+	}
+	Database struct {
+		Host         string `env:"DB_HOST"`
+		Port         int    `env:"DB_PORT"`
+		User         string `env:"DB_USER"`
+		Password     string `env:"DB_PASSWORD"`
+		DatabaseName string `env:"DB_NAME"`
+	}
+	FilesDirectory struct {
+		FilesDirectory string `env:"FILES_DIRECTORY"`
+		Delay          int    `env:"CHECK_FILES_DIRECTORY_DELAY"`
+	}
+	Parser struct {
+		OutFilesDirectory string  `env:"OUT_FILE_DIRECTORY"`
+		PdfApiKey         string  `env:"PDF_API_KEY"`
+		Font              string  `env:"STANDARD_FONT"`
+		BoldFont          string  `env:"STANDARD_BOLD_FONT"`
+		TableBorderWidth  float64 `env:"TABLE_BORDER_WIDTH"`
+	}
+	GrpcService struct {
+		Port     int32 `env:"GRPC_SERVICE_PORT"`
+		PageSize int32 `env:"GRPC_SERVICE_PAGE_SIZE"`
+	}
+	HttpService struct {
+		Port     int `env:"HTTP_SERVICE_PORT"`
+		PageSize int `env:"HTTP_SERVICE_PAGE_SIZE"`
+	}
 }
 
 func New() (*Config, error) {

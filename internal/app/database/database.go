@@ -32,5 +32,5 @@ type IDatabase interface {
 	AddDataRow(ctx context.Context, data []Record) error
 	GetRecordsByGuid(ctx context.Context, guid uuid.UUID) ([]Record, error)
 
-	GetDataAPI(ctx context.Context, guid uuid.UUID, offset int32, limit int32) ([]Record, error)
+	GetDataAPI(ctx context.Context, guid uuid.UUID, offset int, limit int) ([]Record, error)
 }
