@@ -39,7 +39,7 @@ func (s *Service) initEchoService() *echo.Echo {
 	// Echo instance
 	e := echo.New()
 
-	e.POST("/", s.GetData)
+	e.GET("/", s.GetData)
 
 	return e
 }
